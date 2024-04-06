@@ -1,0 +1,54 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+class Firm:
+    def __init__(self, size, strategy='private'):
+        self.size = size  # Relative size affecting data processing capabilities
+        self.strategy = strategy  # 'private' or 'public'
+        self.success = 0  # Measure of firm's success
+
+    def decide_strategy(self, other_firms):
+        # Basic strategy: If bigger firms are going public, follow suit; otherwise, keep data private
+        bigger_firms_public = any(f.size > self.size and f.strategy == 'public' for f in other_firms)
+        self.strategy = 'public' if bigger_firms_public else 'private'
+    
+    def update_success(self, data_pools, all_firms):
+        # Success is based on size, strategy, and available data
+        accessible_data = sum(pool for firm, pool in data_pools.items() if firm.strategy == 'public' or firm == self)
+        self.success += self.size * accessible_data
+        # Optional: Introduce more complex success metrics
+
+def simulate_race(firms, data_pools, rounds=10):
+    history = []
+
+    for _ in range(rounds):
+        # Firms decide on their strategy for this round
+        for firm in firms:
+            firm.decide_strategy([f for f in firms if f != firm])
+        
+        # Update each firm's success based on current strategies
+        for firm in firms:
+            firm.update_success(data_pools, firms)
+        
+        # Record strategies and success for analysis
+        history.append({firm: (firm.strategy, firm.success) for firm in firms})
+    
+    return history
+
+# Example simulation setup
+firms = [Firm(size=np.random.randint(1, 10)) for _ in range(5)]
+data_pools = {firm: np.random.randint(1, 5) for firm in firms}
+
+history = simulate_race(firms, data_pools, rounds=20)
+
+# Plotting the success of each firm over time
+plt.figure(figsize=(10, 6))
+for i, firm in enumerate(firms, start=1):
+    successes = [round_[firm][1] for round_ in history]
+    plt.plot(successes, label=f'Firm {i} (Size {firm.size})')
+
+plt.xlabel('Round')
+plt.ylabel('Success')
+plt.title('Firm Success Over Time')
+plt.legend()
+plt.show()
